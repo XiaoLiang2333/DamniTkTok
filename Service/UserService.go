@@ -1,8 +1,8 @@
 package Service
 
 import (
-	"context"
 	"DamniTkTok/JsonStruct"
+	"context"
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
 	"github.com/segmentio/ksuid"
@@ -56,3 +56,47 @@ func Register(ctx context.Context, c *app.RequestContext) {
 }
 
 /**此为注册接口对应的基础服务实现*/
+func Login(ctx context.Context, c *app.RequestContext) {
+	username, usernameBool := c.GetQuery("username")
+	password, passwordBool := c.GetQuery("password")
+	if !usernameBool || !passwordBool {
+		c.JSON(consts.StatusUnauthorized, &JsonStruct.LoginReply{
+			StatusCode: 1,
+			StatusMsg:  "no passed data",
+		})
+		return
+	}
+	dsn := "root:XHL13458218248.@tcp(127.0.0.1:3306)/dbname?charset=utf8mb4&parseTime=True&loc=Local"
+	UserInfo, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	if err != nil {
+		panic("failed to connect database")
+	}
+	resp := &JsonStruct.LoginReply{}
+	var userregister JsonStruct.UserRegister
+	result := UserInfo.Where("user_name = ?", username).First(&userregister)
+	if result.Error != nil {
+		c.JSON(consts.StatusUnauthorized, &JsonStruct.LoginReply{
+			StatusCode: 1,
+			StatusMsg:  "Found no user",
+		})
+		return
+	}
+	result2 := UserInfo.Where("user_name = ?", username).Where("user_pass_word = ?", password).First(&userregister)
+	if result2.Error != nil {
+		c.JSON(consts.StatusUnauthorized, &JsonStruct.LoginReply{
+			StatusCode: 1,
+			StatusMsg:  "password incorrect",
+		})
+		return
+	}
+
+	resp = &JsonStruct.LoginReply{
+		StatusCode: 0,
+		StatusMsg:  "Login Query Success",
+		Token:      userregister.Token,
+		UserID:     userregister.ID,
+	}
+	c.JSON(consts.StatusOK, resp)
+}
+
+/**此为登陆对应的具体服务实现*/
