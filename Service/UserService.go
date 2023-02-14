@@ -59,10 +59,15 @@ func Register(ctx context.Context, c *app.RequestContext) {
 func Login(ctx context.Context, c *app.RequestContext) {
 	username, usernameBool := c.GetQuery("username")
 	password, passwordBool := c.GetQuery("password")
+	var userregister JsonStruct.UserRegister
+	var usertoken *string
+	var msg *string
 	if !usernameBool || !passwordBool {
+		failmsg := "no passed data"
+		msg = &failmsg
 		c.JSON(consts.StatusUnauthorized, &JsonStruct.LoginReply{
 			StatusCode: 1,
-			StatusMsg:  "no passed data",
+			StatusMsg:  msg,
 		})
 		return
 	}
@@ -72,30 +77,38 @@ func Login(ctx context.Context, c *app.RequestContext) {
 		panic("failed to connect database")
 	}
 	resp := &JsonStruct.LoginReply{}
-	var userregister JsonStruct.UserRegister
+
 	result := UserInfo.Where("user_name = ?", username).First(&userregister)
 	if result.Error != nil {
+		failmsg := "Can't find user"
+		msg = &failmsg
 		c.JSON(consts.StatusUnauthorized, &JsonStruct.LoginReply{
 			StatusCode: 1,
-			StatusMsg:  "Found no user",
+			StatusMsg:  msg,
 		})
 		return
 	}
 	result2 := UserInfo.Where("user_name = ?", username).Where("user_pass_word = ?", password).First(&userregister)
 	if result2.Error != nil {
+		failmsg := "Incorrect password"
+		msg = &failmsg
 		c.JSON(consts.StatusUnauthorized, &JsonStruct.LoginReply{
 			StatusCode: 1,
-			StatusMsg:  "password incorrect",
+			StatusMsg:  msg,
 		})
 		return
 	}
-
+	token := ksuid.New().String()
+	usertoken = &token
+	failmsg := "Login Query Success"
+	msg = &failmsg
 	resp = &JsonStruct.LoginReply{
 		StatusCode: 0,
-		StatusMsg:  "Login Query Success",
-		Token:      userregister.Token,
-		UserID:     userregister.ID,
+		StatusMsg:  &failmsg,
+		Token:      usertoken,
+		UserID:     &userregister.ID,
 	}
+	UserInfo.Table("user_registers").Where("user_name = ?", username).Update("token", token)
 	c.JSON(consts.StatusOK, resp)
 }
 
