@@ -12,5 +12,6 @@ func main() {
 	userGroup := douyin.Group("/user")
 	userGroup.POST("/register/", Service.Register)
 	userGroup.POST("/login/", Service.Login)
+	userGroup.GET("/", Service.Getinfo)
 	h.Spin()
 }
