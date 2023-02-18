@@ -27,10 +27,11 @@ func Register(ctx context.Context, c *app.RequestContext) {
 		})
 		return
 	}
-	dsn := "douyin:123456@tcp(127.0.0.1:3306)/userinfo?charset=utf8mb4&parseTime=True&loc=Local"
+
 	UserInfo, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
 		panic("failed to connect database")
+		return
 	}
 	resp := &JsonStruct.RegisterResponse{}
 	var userregister JsonStruct.UserRegister
@@ -70,7 +71,6 @@ func Login(ctx context.Context, c *app.RequestContext) {
 		})
 		return
 	}
-	dsn := "douyin:123456@tcp(127.0.0.1:3306)/userinfo?charset=utf8mb4&parseTime=True&loc=Local"
 	UserInfo, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
 		panic("failed to connect database")
@@ -126,7 +126,7 @@ func Getinfo(ctx context.Context, c *app.RequestContext) {
 		})
 		return
 	}
-	dsn := "douyin:123456@tcp(127.0.0.1:3306)/userinfo?charset=utf8mb4&parseTime=True&loc=Local"
+
 	UserInfo, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
 		panic("failed to connect database")
