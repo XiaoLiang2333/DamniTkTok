@@ -17,9 +17,9 @@ func PublishAction(ctx context.Context, c *app.RequestContext) {
 	token := form.Value["token"][0]
 	title := form.Value["title"][0]
 	file := form.File["data"]
-	var userinfo JsonStruct.UserRegister
+	var userinfo JsonStruct.User
 	UserInfo, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
-	result := UserInfo.Table("user_registers").Where("token = ?", token).First(&userinfo)
+	result := UserInfo.Table("users").Where("token = ?", token).First(&userinfo)
 	if result.Error != nil {
 		var msg *string
 		Failmsg := "Wrong token"
@@ -79,9 +79,9 @@ func PublishAction(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 	url := "http://localhost:8080/douyin/publish/action/" + filename
-	var Video JsonStruct.Videolist
+	var Video JsonStruct.Video
 	var User JsonStruct.User
-	err = UserInfo.AutoMigrate(&JsonStruct.Videolist{}, &JsonStruct.User{})
+	err = UserInfo.AutoMigrate(&JsonStruct.Video{})
 	if err != nil {
 		var msg *string
 		Failmsg := "Failed to create a table"
@@ -93,27 +93,15 @@ func PublishAction(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 	User = JsonStruct.User{
-		Avatar:          "",
-		BackgroundImage: "",
-		FavoriteCount:   0,
-		FollowCount:     0,
-		FollowerCount:   0,
-		ID:              userinfo.ID,
-		IsFollow:        false,
-		Name:            userinfo.UserName,
-		Signature:       "",
-		TotalFavorited:  "",
-		WorkCount:       0,
+
+		ID: userinfo.ID,
+
+		Name: userinfo.Name,
 	}
-	Video = JsonStruct.Videolist{
-		Author:        User,
-		CommentCount:  0,
-		CoverURL:      "",
-		FavoriteCount: 0,
-		VideoID:       0,
-		IsFavorite:    false,
-		PlayURL:       url,
-		Title:         title,
+	Video = JsonStruct.Video{
+		Author:  User,
+		PlayURL: url,
+		Title:   title,
 	}
 	result2 := UserInfo.Table("users").Create(&User).Update("work_count", User.WorkCount+1)
 	UserInfo.Table("videolists").Create(&Video)
@@ -154,7 +142,7 @@ func List(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 	var userinfo = JsonStruct.User{}
-	result := UserInfo.Table("user_registers").Where("id = ?", user_id).First(&userinfo)
+	result := UserInfo.Table("users").Where("id = ?", user_id).First(&userinfo)
 	if result.Error != nil {
 		var msg *string
 		Failmsg := "no passed data"

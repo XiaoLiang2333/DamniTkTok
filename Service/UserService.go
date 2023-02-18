@@ -34,9 +34,9 @@ func Register(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 	resp := &JsonStruct.RegisterResponse{}
-	var userregister JsonStruct.UserRegister
-	UserInfo.AutoMigrate(&JsonStruct.UserRegister{})
-	result := UserInfo.Where("user_name = ?", username).First(&userregister)
+	var userregister JsonStruct.User
+	UserInfo.AutoMigrate(&JsonStruct.User{})
+	result := UserInfo.Where("name = ?", username).First(&userregister)
 	if result.Error == nil {
 		c.JSON(consts.StatusUnauthorized, &JsonStruct.RegisterResponse{
 			StatusCode: 1,
@@ -45,7 +45,7 @@ func Register(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 	token := ksuid.New().String()
-	userregister = JsonStruct.UserRegister{UserName: username, UserPassWord: password, Token: token}
+	userregister = JsonStruct.User{Name: username, UserPassWord: password, Token: token}
 	UserInfo.Create(&userregister)
 	resp = &JsonStruct.RegisterResponse{
 		StatusCode: 0,
@@ -59,7 +59,7 @@ func Register(ctx context.Context, c *app.RequestContext) {
 func Login(ctx context.Context, c *app.RequestContext) {
 	username, usernameBool := c.GetQuery("username")
 	password, passwordBool := c.GetQuery("password")
-	var userregister JsonStruct.UserRegister
+	var userregister JsonStruct.User
 	var usertoken *string
 	var msg *string
 	if !usernameBool || !passwordBool {
@@ -77,7 +77,7 @@ func Login(ctx context.Context, c *app.RequestContext) {
 	}
 	resp := &JsonStruct.LoginResponse{}
 
-	result := UserInfo.Where("user_name = ?", username).First(&userregister)
+	result := UserInfo.Where("name = ?", username).First(&userregister)
 	if result.Error != nil {
 		failmsg := "Can't find user"
 		msg = &failmsg
@@ -87,7 +87,7 @@ func Login(ctx context.Context, c *app.RequestContext) {
 		})
 		return
 	}
-	result2 := UserInfo.Where("user_name = ?", username).Where("user_pass_word = ?", password).First(&userregister)
+	result2 := UserInfo.Where("name = ?", username).Where("user_pass_word = ?", password).First(&userregister)
 	if result2.Error != nil {
 		failmsg := "Incorrect password"
 		msg = &failmsg
@@ -107,7 +107,7 @@ func Login(ctx context.Context, c *app.RequestContext) {
 		Token:      usertoken,
 		UserID:     &userregister.ID,
 	}
-	UserInfo.Table("user_registers").Where("user_name = ?", username).Update("token", token)
+	UserInfo.Table("user_registers").Where("name = ?", username).Update("token", token)
 	c.JSON(consts.StatusOK, resp)
 } //此为登陆对应的具体服务实现
 
@@ -131,7 +131,7 @@ func Getinfo(ctx context.Context, c *app.RequestContext) {
 	if err != nil {
 		panic("failed to connect database")
 	}
-	var userregister JsonStruct.UserRegister
+	var userregister JsonStruct.User
 	result := UserInfo.Where("id = ?", user_id).First(&userregister)
 	if result.Error != nil {
 		var msg *string
@@ -148,7 +148,7 @@ func Getinfo(ctx context.Context, c *app.RequestContext) {
 	success = &successInfo
 	UserResp = &JsonStruct.User{
 		ID:   userregister.ID,
-		Name: userregister.UserName,
+		Name: userregister.Name,
 	}
 	InfoResp = &JsonStruct.GetInfoResponse{
 		StatusCode: 0,
