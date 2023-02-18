@@ -81,7 +81,7 @@ func PublishAction(ctx context.Context, c *app.RequestContext) {
 	url := "http://localhost:8080/douyin/publish/action/" + filename
 	var Video JsonStruct.Video
 	var User JsonStruct.User
-	err = UserInfo.AutoMigrate(&JsonStruct.Video{})
+	err = UserInfo.AutoMigrate(&JsonStruct.Video{}, &JsonStruct.User{})
 	if err != nil {
 		var msg *string
 		Failmsg := "Failed to create a table"
@@ -93,18 +93,15 @@ func PublishAction(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 	User = JsonStruct.User{
-
-		ID: userinfo.ID,
-
-		Name: userinfo.Name,
+		WorkCount: userinfo.WorkCount,
 	}
 	Video = JsonStruct.Video{
-		Author:  User,
 		PlayURL: url,
 		Title:   title,
+		UserID:  userinfo.ID,
 	}
-	result2 := UserInfo.Table("users").Create(&User).Update("work_count", User.WorkCount+1)
-	UserInfo.Table("videolists").Create(&Video)
+	UserInfo.Create(&Video)
+	result2 := UserInfo.Table("users").Where("token = ?", token).Update("work_count", User.WorkCount+1)
 	if result2.Error != nil {
 		var msg *string
 		Failmsg := "Failed to Update"
