@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	h := server.Default(server.WithHostPorts(Service.Port))
+	h := server.Default(server.WithHostPorts(Service.Port), server.WithMaxRequestBodySize(2000*1024*1024))
 
 	douyin := h.Group("/douyin")
 	userGroup := douyin.Group("/user")
