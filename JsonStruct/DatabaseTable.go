@@ -23,6 +23,7 @@ type User struct {
 	UserPassWord    string         `json:"user_pass_word"`
 	Token           string         `json:"token"`
 }
+
 type Video struct {
 	ID            int64 `gorm:"primaryKey" json:"id"`
 	CreatedAt     time.Time
@@ -35,4 +36,12 @@ type Video struct {
 	IsFavorite    bool   `json:"is_favorite"`    // true-已点赞，false-未点赞
 	PlayURL       string `json:"play_url"`       // 视频播放地址
 	Title         string `json:"title"`          // 视频标题
+}
+
+type FavoriteList struct {
+	UserID    int64 `gorm:"primaryKey" json:"user_id"`
+	VideoID   int64 `gorm:"primaryKey" json:"video_id"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt gorm.DeletedAt `gorm:"index"`
 }

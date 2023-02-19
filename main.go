@@ -36,5 +36,10 @@ func main() {
 		}
 		ctx.Write(filestream)
 	})
+	// Favorite Services
+	favoriteGroup := douyin.Group("/favorite")
+	favoriteGroup.POST("/action/", Service.FavorAction)
+	favoriteGroup.GET("/list/", Service.UserFavorList)
+
 	h.Spin()
 }
