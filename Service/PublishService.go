@@ -8,7 +8,6 @@ import (
 	"github.com/segmentio/ksuid"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
-	"mime/multipart"
 	"os"
 	"path"
 )
@@ -20,6 +19,11 @@ func PublishAction(ctx context.Context, c *app.RequestContext) {
 	file := form.File["data"]
 	var userinfo JsonStruct.User
 	UserInfo, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	if err != nil {
+		panic("failed to connect database")
+		return
+	}
+
 	result := UserInfo.Table("users").Where("token = ?", token).First(&userinfo)
 	if result.Error != nil {
 		var msg *string
@@ -32,19 +36,6 @@ func PublishAction(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 	opened, _ := file[0].Open()
-	defer func(opened multipart.File) {
-		err := opened.Close()
-		if err != nil {
-			var msg *string
-			Failmsg := "Failed to close the stream"
-			msg = &Failmsg
-			c.JSON(consts.StatusOK, &JsonStruct.PublishRsp{
-				StatusCode: 1,
-				StatusMsg:  msg,
-			})
-			return
-		}
-	}(opened)
 	var data = make([]byte, file[0].Size)
 	ReadSize, err := opened.Read(data)
 	if err != nil {
@@ -130,7 +121,7 @@ func PublishAction(ctx context.Context, c *app.RequestContext) {
 	Failmsg := "Success"
 	msg = &Failmsg
 	c.JSON(consts.StatusOK, &JsonStruct.PublishRsp{
-		StatusCode: 1,
+		StatusCode: 0,
 		StatusMsg:  msg,
 	})
 } //此为投稿接口

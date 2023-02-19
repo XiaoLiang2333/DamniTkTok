@@ -35,8 +35,8 @@ func Register(ctx context.Context, c *app.RequestContext) {
 	}
 	resp := &JsonStruct.RegisterResponse{}
 	var userregister JsonStruct.User
-	UserInfo.AutoMigrate(&JsonStruct.User{})
-	result := UserInfo.Where("name = ?", username).First(&userregister)
+	UserInfo.Table("users").AutoMigrate(&JsonStruct.User{})
+	result := UserInfo.Table("users").Where("name = ?", username).First(&userregister)
 	if result.Error == nil {
 		c.JSON(consts.StatusUnauthorized, &JsonStruct.RegisterResponse{
 			StatusCode: 1,
@@ -46,7 +46,7 @@ func Register(ctx context.Context, c *app.RequestContext) {
 	}
 	token := ksuid.New().String()
 	userregister = JsonStruct.User{Name: username, UserPassWord: password, Token: token}
-	UserInfo.Create(&userregister)
+	UserInfo.Table("users").Create(&userregister)
 	resp = &JsonStruct.RegisterResponse{
 		StatusCode: 0,
 		StatusMsg:  "Register Query Success",
@@ -77,7 +77,7 @@ func Login(ctx context.Context, c *app.RequestContext) {
 	}
 	resp := &JsonStruct.LoginResponse{}
 
-	result := UserInfo.Where("name = ?", username).First(&userregister)
+	result := UserInfo.Table("users").Where("name = ?", username).First(&userregister)
 	if result.Error != nil {
 		failmsg := "Can't find user"
 		msg = &failmsg
@@ -87,7 +87,7 @@ func Login(ctx context.Context, c *app.RequestContext) {
 		})
 		return
 	}
-	result2 := UserInfo.Where("name = ?", username).Where("user_pass_word = ?", password).First(&userregister)
+	result2 := UserInfo.Table("users").Where("name = ?", username).Where("user_pass_word = ?", password).First(&userregister)
 	if result2.Error != nil {
 		failmsg := "Incorrect password"
 		msg = &failmsg
@@ -107,7 +107,7 @@ func Login(ctx context.Context, c *app.RequestContext) {
 		Token:      usertoken,
 		UserID:     &userregister.ID,
 	}
-	UserInfo.Table("user_registers").Where("name = ?", username).Update("token", token)
+	UserInfo.Table("users").Where("name = ?", username).Update("token", token)
 	c.JSON(consts.StatusOK, resp)
 } //此为登陆对应的具体服务实现
 
@@ -132,7 +132,7 @@ func Getinfo(ctx context.Context, c *app.RequestContext) {
 		panic("failed to connect database")
 	}
 	var userregister JsonStruct.User
-	result := UserInfo.Where("id = ?", user_id).First(&userregister)
+	result := UserInfo.Table("users").Where("id = ?", user_id).First(&userregister)
 	if result.Error != nil {
 		var msg *string
 		Failmsg := "User Not Found"

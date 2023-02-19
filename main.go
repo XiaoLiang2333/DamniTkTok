@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	h := server.Default(server.WithHostPorts(Service.Port), server.WithMaxRequestBodySize(2000*1024*1024))
+	h := server.Default(server.WithHostPorts(Service.Port))
 
 	douyin := h.Group("/douyin")
 	userGroup := douyin.Group("/user")
@@ -20,6 +20,10 @@ func main() {
 	userGroup.POST("/login/", Service.Login)
 	userGroup.GET("/", Service.Getinfo)
 	//User services
+	commentGroup := douyin.Group("/comment")
+	commentGroup.POST("/action/", Service.CommentAction)
+	commentGroup.GET("/list/", Service.CommentList)
+
 	publishGroup := douyin.Group("/publish")
 	publishGroup.POST("/action/", Service.PublishAction)
 	publishGroup.GET("/list/", Service.List)
@@ -38,3 +42,5 @@ func main() {
 	})
 	h.Spin()
 }
+
+//此为评论接口
