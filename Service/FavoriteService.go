@@ -3,6 +3,7 @@ package Service
 import (
 	"DamniTkTok/JsonStruct"
 	"context"
+	"fmt"
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
 	"gorm.io/driver/mysql"
@@ -100,7 +101,7 @@ func FavorAction(ctx context.Context, c *app.RequestContext) {
 		// 处理查询异常
 		if result.Error != nil {
 			var msg *string
-			Failmsg := "Date Not Found"
+			Failmsg := "Query Error"
 			msg = &Failmsg
 			c.JSON(consts.StatusUnauthorized, &JsonStruct.FavoriteActionRsp{
 				StatusCode: 1,
@@ -121,11 +122,22 @@ func FavorAction(ctx context.Context, c *app.RequestContext) {
 
 }
 
-// UserFavorList List 喜欢列表接口实现     由于暂时没有Video数据库，还未完成开发
+// UserFavorList List 喜欢列表接口实现    还未完成开发
 func UserFavorList(ctx context.Context, c *app.RequestContext) {
 	// 获取客户端参数 user_id token
-	// userId, _ := c.GetQuery("user_id")
+	userId, _ := c.GetQuery("user_id")
 	token, _ := c.GetQuery("token")
+	// 检查客户端参数 user_id token
+	if len(userId) == 0 || len(token) == 0 {
+		var msg *string
+		Failmsg := "no passed data"
+		msg = &Failmsg
+		c.JSON(500, &JsonStruct.FavoriteActionRsp{
+			StatusCode: 1,
+			StatusMsg:  *msg,
+		})
+		return
+	}
 
 	// 验证 token
 	var userinfo JsonStruct.User
@@ -146,6 +158,31 @@ func UserFavorList(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	// 获取用户的所有喜欢列表（点赞视频）
+	/* 获取用户的所有喜欢列表（点赞视频）*/
+	var userfavorite JsonStruct.FavoriteList
+	result = TikTok.Where("user_id = ?", userId).Find(&userfavorite)
+	// 处理查询异常
+	if result.Error != nil {
+		c.JSON(consts.StatusUnauthorized, &JsonStruct.FavoriteActionRsp{
+			StatusCode: 1,
+			StatusMsg:  "Query Error",
+		})
+		return
+	}
+	// 正常执行
+	fmt.Println(result.RowsAffected)
 
+	/*
+		// 返回响应
+		resp := &JsonStruct.FavoriteListRsp{}
+		var msg *string
+		Failmsg := "Query Success"
+		msg = &Failmsg
+		resp = &JsonStruct.FavoriteListRsp{
+			StatusCode: 1,
+			StatusMsg: msg,
+			VideoList:
+		}
+		c.JSON(consts.StatusOK, resp)
+	*/
 }
