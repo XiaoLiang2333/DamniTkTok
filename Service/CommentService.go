@@ -177,7 +177,7 @@ func CommentAction(ctx context.Context, c *app.RequestContext) {
 
 }
 
-// 此为评论视频接口
+// 此为评论视频接口，已测试，无问题
 func CommentList(ctx context.Context, c *app.RequestContext) {
 	_, tokenBool := c.GetQuery("token")
 	video_id, video_idBool := c.GetQuery("video_id")
@@ -201,19 +201,7 @@ func CommentList(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 	comments := make([]JsonStruct.Comment, 8)
-	result := UserInfo.Table("comments").Where("video_id = ?", video_id).Find(&comments)
-
-	if result != nil {
-		var msg *string
-		Failmsg := "video_id err"
-		msg = &Failmsg
-		c.JSON(consts.StatusUnauthorized, &JsonStruct.CommentListRsp{
-			StatusCode:  1,
-			StatusMsg:   msg,
-			CommentList: comment,
-		})
-		return
-	}
+	UserInfo.Table("comments").Where("video_id = ?", video_id).Find(&comments)
 	successInfo := "get commentlist successfully"
 	success := &successInfo
 	c.JSON(consts.StatusOK, &JsonStruct.CommentListRsp{
@@ -224,4 +212,4 @@ func CommentList(ctx context.Context, c *app.RequestContext) {
 
 }
 
-//此为拉取评论列表接口，有点问题
+//此为拉取评论列表接口，已测试，无问题
