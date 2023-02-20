@@ -40,3 +40,13 @@ type FavoriteListRsp struct {
 	StatusMsg  *string `json:"status_msg"`  // 返回状态描述
 	VideoList  []Video `json:"video_list"`  // 用户点赞视频列表
 }
+type CommentRsp struct {
+	Comment    *CommentRes `json:"comment"`     // 评论成功返回评论内容，不需要重新拉取整个列表
+	StatusCode int64       `json:"status_code"` // 状态码，0-成功，其他值-失败
+	StatusMsg  *string     `json:"status_msg"`  // 返回状态描述
+}
+type CommentListRsp struct {
+	CommentList []Comment `json:"comment_list"` // 评论列表
+	StatusCode  int64     `json:"status_code"`  // 状态码，0-成功，其他值-失败
+	StatusMsg   *string   `json:"status_msg"`   // 返回状态描述
+}
