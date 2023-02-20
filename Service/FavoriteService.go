@@ -173,16 +173,41 @@ func UserFavorList(ctx context.Context, c *app.RequestContext) {
 	fmt.Println(result.RowsAffected)
 
 	/*
-		// 返回响应
-		resp := &JsonStruct.FavoriteListRsp{}
-		var msg *string
-		Failmsg := "Query Success"
-		msg = &Failmsg
-		resp = &JsonStruct.FavoriteListRsp{
-			StatusCode: 1,
-			StatusMsg: msg,
-			VideoList:
+			// 返回响应
+			resp := &JsonStruct.FavoriteListRsp{}
+			var msg *string
+			Failmsg := "Query Success"
+			msg = &Failmsg
+			resp = &JsonStruct.FavoriteListRsp{
+				{
+		    "status_code": 0,
+		    "status_msg": *msg,
+		    "video_list": [
+		        {
+		            "id": 0,
+		            "author": {
+		                "id": 0,
+		                "name": "string",
+		                "follow_count": 0,
+		                "follower_count": 0,
+		                "is_follow": true,
+		                "avatar": "string",
+		                "background_image": "string",
+		                "signature": "string",
+		                "total_favorited": "string",
+		                "work_count": 0,
+		                "favorite_count": 0
+		            },
+		            "play_url": "string",
+		            "cover_url": "string",
+		            "favorite_count": 0,
+		            "comment_count": 0,
+		            "is_favorite": true,
+		            "title": "string"
+		        }
+		    ]
 		}
-		c.JSON(consts.StatusOK, resp)
+			}
+			c.JSON(consts.StatusOK, resp)
 	*/
 }
