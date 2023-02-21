@@ -126,11 +126,25 @@ func CommentAction(ctx context.Context, c *app.RequestContext) {
 			return
 		}
 		var ms7 *string
+		commentuserres := JsonStruct.CommentUserRes{
+			userinfo.ID,
+			userinfo.Name,
+			userinfo.FollowCount,
+			userinfo.FollowerCount,
+			userinfo.IsFollow,
+			userinfo.Avatar,
+			userinfo.BackgroundImage,
+			userinfo.Signature,
+			userinfo.TotalFavorited,
+			userinfo.WorkCount,
+			userinfo.FavoriteCount,
+		}
+
 		CommentRes := JsonStruct.CommentRes{
 			Content:    comment_text,
 			CreateDate: t,
 			ID:         Comment.ID,
-			User:       userinfo,
+			User:       commentuserres,
 		}
 
 		Failmsg = "Success"
