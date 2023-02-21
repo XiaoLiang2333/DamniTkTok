@@ -113,7 +113,7 @@ func CommentAction(ctx context.Context, c *app.RequestContext) {
 		Video := JsonStruct.Video{
 			CommentCount: com.CommentCount,
 		}
-		result4 := UserInfo.Table("videos").Where("id = ?", video_id).Update("comment_count", Video.CommentCount+1)
+		result4 := UserInfo.Table("videos").Where("id = ?", video_id).Update("favorite_count", Video.CommentCount+1)
 		if result4.Error != nil {
 			var ms6 *string
 			Failmsg := "Failed to Update"

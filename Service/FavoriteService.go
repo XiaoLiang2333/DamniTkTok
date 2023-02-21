@@ -77,6 +77,10 @@ func FavorAction(ctx context.Context, c *app.RequestContext) {
 	case strconv.Itoa(1):
 		userfavorite = JsonStruct.FavoriteList{UserID: userregister.ID, VideoID: int64VideoId}
 		result := TikTok.Create(&userfavorite)
+		// 对应视频点赞数 +1
+		var uservideo JsonStruct.Video
+		TikTok.Where("id = ?", videoId).Find(&uservideo)
+		TikTok.Table("videos").Where("id = ?", videoId).Update("favorite_count", uservideo.FavoriteCount+1)
 		// 处理插入异常
 		if result.Error != nil {
 			var msg *string
@@ -98,6 +102,10 @@ func FavorAction(ctx context.Context, c *app.RequestContext) {
 	// 将取消点赞记录从数据库中删除 action_type 2-取消点赞
 	case strconv.Itoa(2):
 		result := TikTok.Where(map[string]interface{}{"user_id": userregister.ID, "video_id": int64VideoId}).Find(&userfavorite)
+		// 对应视频点赞数 -1
+		var uservideo JsonStruct.Video
+		TikTok.Where("id = ?", videoId).Find(&uservideo)
+		TikTok.Table("videos").Where("id = ?", videoId).Update("favorite_count", uservideo.FavoriteCount-1)
 		// 处理查询异常
 		if result.Error != nil {
 			var msg *string
@@ -171,43 +179,17 @@ func UserFavorList(ctx context.Context, c *app.RequestContext) {
 	}
 	// 正常执行
 	fmt.Println(result.RowsAffected)
-
 	/*
-			// 返回响应
-			resp := &JsonStruct.FavoriteListRsp{}
-			var msg *string
-			Failmsg := "Query Success"
-			msg = &Failmsg
-			resp = &JsonStruct.FavoriteListRsp{
-				{
-		    "status_code": 0,
-		    "status_msg": *msg,
-		    "video_list": [
-		        {
-		            "id": 0,
-		            "author": {
-		                "id": 0,
-		                "name": "string",
-		                "follow_count": 0,
-		                "follower_count": 0,
-		                "is_follow": true,
-		                "avatar": "string",
-		                "background_image": "string",
-		                "signature": "string",
-		                "total_favorited": "string",
-		                "work_count": 0,
-		                "favorite_count": 0
-		            },
-		            "play_url": "string",
-		            "cover_url": "string",
-		            "favorite_count": 0,
-		            "comment_count": 0,
-		            "is_favorite": true,
-		            "title": "string"
-		        }
-		    ]
+		// 返回响应
+		resp := &JsonStruct.FavoriteListRsp{}
+		var msg *string
+		Failmsg := "Query Success"
+		msg = &Failmsg
+		resp = &JsonStruct.FavoriteListRsp{
+			StatusCode: 0,
+			StatusMsg: msg,
+			VideoList:
 		}
-			}
 			c.JSON(consts.StatusOK, resp)
 	*/
 }
