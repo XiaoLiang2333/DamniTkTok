@@ -12,9 +12,10 @@ import (
 )
 
 func main() {
-	h := server.Default(server.WithHostPorts(Service.Port))
+	h := server.Default(server.WithHostPorts(Service.Port), server.WithMaxRequestBodySize(2000*1024*1024))
 
 	douyin := h.Group("/douyin")
+	douyin.GET("/feed", Service.FeedAction)
 	userGroup := douyin.Group("/user")
 	userGroup.POST("/register/", Service.Register)
 	userGroup.POST("/login/", Service.Login)
@@ -27,7 +28,7 @@ func main() {
 	publishGroup := douyin.Group("/publish")
 	publishGroup.POST("/action/", Service.PublishAction)
 	publishGroup.GET("/list/", Service.List)
-	publishGroup.POST("/action/:filename", func(c context.Context, ctx *app.RequestContext) {
+	publishGroup.GET("/action/:filename", func(c context.Context, ctx *app.RequestContext) {
 		filename := ctx.Param("filename")
 		filePath := path.Join("video", filename+".mp4")
 		filestream, err := os.ReadFile(filePath)

@@ -126,7 +126,7 @@ func CommentAction(ctx context.Context, c *app.RequestContext) {
 			return
 		}
 		var ms7 *string
-		commentuserres := JsonStruct.CommentUserRes{
+		commentuserres := JsonStruct.RspUser{
 			userinfo.ID,
 			userinfo.Name,
 			userinfo.FollowCount,
