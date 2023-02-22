@@ -3,6 +3,7 @@ package Service
 import (
 	"DamniTkTok/JsonStruct"
 	"context"
+	"fmt"
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
 	"github.com/segmentio/ksuid"
@@ -74,6 +75,7 @@ func PublishAction(ctx context.Context, c *app.RequestContext) {
 		})
 		return
 	}
+
 	err = os.WriteFile(filePath, data, os.FileMode(0755))
 	if err != nil {
 		var msg *string
@@ -85,8 +87,9 @@ func PublishAction(ctx context.Context, c *app.RequestContext) {
 		})
 		return
 	}
+	outpath := VideoConverter(filePath)
 	Host := c.Host()
-	url := UrlHeader + string(Host) + Videorouting + filename
+	url := UrlHeader + string(Host) + Videorouting + outpath
 	var Video JsonStruct.Video
 	var User JsonStruct.User
 	err = UserInfo.AutoMigrate(&JsonStruct.Video{}, &JsonStruct.User{})
@@ -245,7 +248,14 @@ func FeedAction(ctx context.Context, c *app.RequestContext) {
 }
 func ReadUser(userid int64) (u *JsonStruct.RspUser) {
 	var User JsonStruct.RspUser
-	UserInfo, _ := gorm.Open(mysql.Open(dsn), &gorm.Config{})
-	UserInfo.Table("users").Where("id = ?", userid).First(&User)
+	UserInfo, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	if err != nil {
+		panic("failed to connect database")
+	}
+	result := UserInfo.Table("users").Where("id = ?", userid).First(&User)
+	if result.Error != nil {
+		fmt.Println(result.Error)
+		return
+	}
 	return &User
 } //根据用户ID获取对应用户资料

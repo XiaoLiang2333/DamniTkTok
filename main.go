@@ -6,7 +6,6 @@ import (
 	"context"
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/app/server"
-	"github.com/cloudwego/hertz/pkg/protocol/consts"
 	"os"
 	"path"
 )
@@ -30,10 +29,10 @@ func main() {
 	publishGroup.GET("/list/", Service.List)
 	publishGroup.GET("/action/:filename", func(c context.Context, ctx *app.RequestContext) {
 		filename := ctx.Param("filename")
-		filePath := path.Join("video", filename+".mp4")
+		filePath := path.Join("out", filename+".mp4")
 		filestream, err := os.ReadFile(filePath)
 		if err != nil {
-			ctx.JSON(consts.StatusUnauthorized, &JsonStruct.PlayVideoRsp{
+			ctx.JSON(500, &JsonStruct.PlayVideoRsp{
 				StatusCode: 1,
 				StatusMsg:  "Failed to turn to stream",
 			})

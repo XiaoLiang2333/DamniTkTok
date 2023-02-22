@@ -15,9 +15,9 @@ type LoginResponse struct {
 }
 
 type GetInfoResponse struct {
-	StatusCode int64   `json:"status_code"` // 状态码，0-成功，其他值-失败
-	StatusMsg  *string `json:"status_msg"`  // 返回状态描述
-	User       *User   `json:"user"`        // 用户信息
+	StatusCode int64    `json:"status_code"` // 状态码，0-成功，其他值-失败
+	StatusMsg  *string  `json:"status_msg"`  // 返回状态描述
+	User       *RspUser `json:"user"`        // 用户信息
 }
 
 type PublishRsp struct {

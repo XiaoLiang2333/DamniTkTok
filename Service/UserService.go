@@ -8,6 +8,7 @@ import (
 	"github.com/segmentio/ksuid"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+	"strconv"
 )
 
 func Register(ctx context.Context, c *app.RequestContext) {
@@ -114,8 +115,7 @@ func Login(ctx context.Context, c *app.RequestContext) {
 func Getinfo(ctx context.Context, c *app.RequestContext) {
 	user_id, user_idBool := c.GetQuery("user_id")
 	_, tokenBool := c.GetQuery("token")
-	InfoResp := &JsonStruct.GetInfoResponse{}
-	UserResp := &JsonStruct.User{}
+	userid, _ := strconv.ParseInt(user_id, 10, 64)
 	if !user_idBool || !tokenBool {
 		var msg *string
 		Failmsg := "no passed data"
@@ -126,33 +126,24 @@ func Getinfo(ctx context.Context, c *app.RequestContext) {
 		})
 		return
 	}
-
-	UserInfo, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
-	if err != nil {
-		panic("failed to connect database")
-	}
-	var userregister JsonStruct.User
-	result := UserInfo.Table("users").Where("id = ?", user_id).First(&userregister)
-	if result.Error != nil {
-		var msg *string
-		Failmsg := "User Not Found"
-		msg = &Failmsg
-		c.JSON(consts.StatusUnauthorized, &JsonStruct.GetInfoResponse{
-			StatusCode: 1,
-			StatusMsg:  msg,
-		})
-		return
-	}
-	var success *string
+	user := ReadUser(userid)
 	successInfo := "Get Imformation successfully"
-	success = &successInfo
-	UserResp = &JsonStruct.User{
-		ID:   userregister.ID,
-		Name: userregister.Name,
+	UserResp := &JsonStruct.RspUser{
+		ID:              user.ID,
+		Name:            user.Name,
+		FollowCount:     user.FollowerCount,
+		FollowerCount:   user.FollowCount,
+		IsFollow:        user.IsFollow,
+		Avatar:          user.Avatar,
+		BackgroundImage: user.BackgroundImage,
+		Signature:       user.Signature,
+		TotalFavorited:  user.TotalFavorited,
+		WorkCount:       user.WorkCount,
+		FavoriteCount:   user.FavoriteCount,
 	}
-	InfoResp = &JsonStruct.GetInfoResponse{
+	InfoResp := &JsonStruct.GetInfoResponse{
 		StatusCode: 0,
-		StatusMsg:  success,
+		StatusMsg:  &successInfo,
 		User:       UserResp,
 	}
 	c.JSON(consts.StatusOK, InfoResp)
