@@ -38,14 +38,6 @@ type Video struct {
 	Title         string `json:"title"`          // 视频标题
 }
 
-type FavoriteList struct {
-	UserID    int64 `gorm:"primaryKey" json:"user_id"`
-	VideoID   int64 `gorm:"primaryKey" json:"video_id"`
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	DeletedAt gorm.DeletedAt `gorm:"index"`
-}
-
 type Comment struct {
 	Content    string `json:"content"`              // 评论内容
 	CreateDate string `json:"create_date"`          // 评论发布日期，格式 mm-dd
