@@ -32,12 +32,12 @@ func FavorAction(ctx context.Context, c *app.RequestContext) {
 
 	// 验证 token
 	var userinfo JsonStruct.User
-	TikTok, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	UserInfo, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
 		panic("failed to connect database")
 		return
 	}
-	result := TikTok.Table("users").Where("token = ?", token).First(&userinfo)
+	result := UserInfo.Table("users").Where("token = ?", token).First(&userinfo)
 	if result.Error != nil {
 		var msg *string
 		Failmsg := "Wrong token"
@@ -52,7 +52,7 @@ func FavorAction(ctx context.Context, c *app.RequestContext) {
 	// AutoMigrate 自动创建数据库表
 	resp := &JsonStruct.FavoriteActionRsp{}
 	var userfavorite JsonStruct.FavoriteList
-	err = TikTok.AutoMigrate(&JsonStruct.FavoriteList{})
+	err = UserInfo.AutoMigrate(&JsonStruct.FavoriteList{})
 	if err != nil {
 		panic("failed to create table")
 		return
@@ -60,7 +60,7 @@ func FavorAction(ctx context.Context, c *app.RequestContext) {
 
 	// 通过 token 查询对应的用户ID —— result
 	var userregister JsonStruct.User
-	result = TikTok.Where("token = ?", token).Find(&userregister)
+	result = UserInfo.Where("token = ?", token).Find(&userregister)
 	if result.Error != nil {
 		var msg *string
 		Failmsg := "User Not Found"
@@ -76,11 +76,11 @@ func FavorAction(ctx context.Context, c *app.RequestContext) {
 	// 将点赞操作插入数据库 action_type 1-点赞
 	case strconv.Itoa(1):
 		userfavorite = JsonStruct.FavoriteList{UserID: userregister.ID, VideoID: int64VideoId}
-		result := TikTok.Create(&userfavorite)
+		result := UserInfo.Create(&userfavorite)
 		// 对应视频点赞数 +1
 		var uservideo JsonStruct.Video
-		TikTok.Where("id = ?", videoId).Find(&uservideo)
-		TikTok.Table("videos").Where("id = ?", videoId).Update("favorite_count", uservideo.FavoriteCount+1)
+		UserInfo.Where("id = ?", videoId).Find(&uservideo)
+		UserInfo.Table("videos").Where("id = ?", videoId).Update("favorite_count", uservideo.FavoriteCount+1)
 		// 处理插入异常
 		if result.Error != nil {
 			var msg *string
@@ -101,11 +101,11 @@ func FavorAction(ctx context.Context, c *app.RequestContext) {
 
 	// 将取消点赞记录从数据库中删除 action_type 2-取消点赞
 	case strconv.Itoa(2):
-		result := TikTok.Where(map[string]interface{}{"user_id": userregister.ID, "video_id": int64VideoId}).Find(&userfavorite)
+		result := UserInfo.Where(map[string]interface{}{"user_id": userregister.ID, "video_id": int64VideoId}).Find(&userfavorite)
 		// 对应视频点赞数 -1
 		var uservideo JsonStruct.Video
-		TikTok.Where("id = ?", videoId).Find(&uservideo)
-		TikTok.Table("videos").Where("id = ?", videoId).Update("favorite_count", uservideo.FavoriteCount-1)
+		UserInfo.Where("id = ?", videoId).Find(&uservideo)
+		UserInfo.Table("videos").Where("id = ?", videoId).Update("favorite_count", uservideo.FavoriteCount-1)
 		// 处理查询异常
 		if result.Error != nil {
 			var msg *string
@@ -119,7 +119,7 @@ func FavorAction(ctx context.Context, c *app.RequestContext) {
 		}
 
 		// 正常执行
-		TikTok.Unscoped().Delete(&userfavorite)
+		UserInfo.Unscoped().Delete(&userfavorite)
 
 		resp = &JsonStruct.FavoriteActionRsp{
 			StatusCode: 0,
@@ -133,20 +133,19 @@ func FavorAction(ctx context.Context, c *app.RequestContext) {
 // UserFavorList List 喜欢列表接口实现    还未完成开发
 func UserFavorList(ctx context.Context, c *app.RequestContext) {
 	// 获取客户端参数 user_id token
-	userId, _ := c.GetQuery("user_id")
-	token, _ := c.GetQuery("token")
+	user_id, user_idBool := c.GetQuery("user_id")
+	token, tokenBool := c.GetQuery("token")
 	// 检查客户端参数 user_id token
-	if len(userId) == 0 || len(token) == 0 {
-		var msg *string
+	if !user_idBool || !tokenBool {
 		Failmsg := "no passed data"
-		msg = &Failmsg
-		c.JSON(500, &JsonStruct.FavoriteActionRsp{
+		c.JSON(500, &JsonStruct.FavoriteListRsp{
 			StatusCode: 1,
-			StatusMsg:  *msg,
+			StatusMsg:  &Failmsg,
+			VideoList:  nil,
 		})
 		return
 	}
-
+	fmt.Println(user_id)
 	// 验证 token
 	var userinfo JsonStruct.User
 	TikTok, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
@@ -156,40 +155,55 @@ func UserFavorList(ctx context.Context, c *app.RequestContext) {
 	}
 	result := TikTok.Table("users").Where("token = ?", token).First(&userinfo)
 	if result.Error != nil {
-		var msg *string
 		Failmsg := "Wrong token"
-		msg = &Failmsg
-		c.JSON(consts.StatusUnauthorized, &JsonStruct.PublishRsp{
+		c.JSON(500, &JsonStruct.FavoriteListRsp{
 			StatusCode: 1,
-			StatusMsg:  msg,
+			StatusMsg:  &Failmsg,
+			VideoList:  nil,
 		})
 		return
 	}
 
 	/* 获取用户的所有喜欢列表（点赞视频）*/
-	var userfavorite JsonStruct.FavoriteList
-	result = TikTok.Where("user_id = ?", userId).Find(&userfavorite)
+	var userfavorite []JsonStruct.FavoriteList
+	result = TikTok.Table("favorite_lists").Where("user_id = ?", user_id).Find(&userfavorite)
 	// 处理查询异常
 	if result.Error != nil {
-		c.JSON(consts.StatusUnauthorized, &JsonStruct.FavoriteActionRsp{
+		msg := "Query Error"
+		c.JSON(consts.StatusUnauthorized, &JsonStruct.FavoriteListRsp{
 			StatusCode: 1,
-			StatusMsg:  "Query Error",
+			StatusMsg:  &msg,
+			VideoList:  nil,
 		})
 		return
 	}
-	// 正常执行
-	fmt.Println(result.RowsAffected)
-	/*
-		// 返回响应
-		resp := &JsonStruct.FavoriteListRsp{}
-		var msg *string
-		Failmsg := "Query Success"
-		msg = &Failmsg
-		resp = &JsonStruct.FavoriteListRsp{
-			StatusCode: 0,
-			StatusMsg: msg,
-			VideoList:
-		}
-			c.JSON(consts.StatusOK, resp)
-	*/
+
+	var videos []*JsonStruct.RspVideo
+	TikTok.Table("favorite_lists").Where("user_id = ?", user_id).Find(&userfavorite)
+	for _, v := range userfavorite {
+		video := GetFavoriteVideo(v.VideoID)
+		User := ReadUser(v.UserID)
+		videos = append(videos, &JsonStruct.RspVideo{
+			Author:        User,
+			CommentCount:  video.CommentCount,
+			CoverURL:      video.CoverURL,
+			FavoriteCount: video.FavoriteCount,
+			ID:            video.ID,
+			IsFavorite:    video.IsFavorite,
+			PlayURL:       video.PlayURL,
+			Title:         video.Title,
+		})
+	} //提取用户喜欢列表并进行填装
+	msg := "Success"
+	c.JSON(consts.StatusOK, JsonStruct.FavoriteListRsp{
+		StatusCode: 0,
+		StatusMsg:  &msg,
+		VideoList:  videos,
+	})
 }
+func GetFavoriteVideo(videoid int64) (u *JsonStruct.Video) {
+	TikTok, _ := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	var video JsonStruct.Video
+	TikTok.Table("videos").Where("id = ?", videoid).First(&video)
+	return &video
+} //根据videoid提取视频
