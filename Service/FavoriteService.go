@@ -130,7 +130,7 @@ func FavorAction(ctx context.Context, c *app.RequestContext) {
 
 }
 
-// UserFavorList List 喜欢列表接口实现    还未完成开发
+// UserFavorList List 喜欢列表接口实现
 func UserFavorList(ctx context.Context, c *app.RequestContext) {
 	// 获取客户端参数 user_id token
 	user_id, user_idBool := c.GetQuery("user_id")
