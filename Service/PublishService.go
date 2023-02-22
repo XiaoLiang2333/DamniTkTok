@@ -3,7 +3,6 @@ package Service
 import (
 	"DamniTkTok/JsonStruct"
 	"context"
-	"fmt"
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
 	"github.com/segmentio/ksuid"
@@ -201,17 +200,16 @@ func FeedAction(ctx context.Context, c *app.RequestContext) {
 	if latest_time == "0" {
 		latest_time = strconv.FormatInt(now, 10)
 		last, _ = strconv.ParseInt(latest_time, 10, 64)
-	}
+	} //latest_time传入默认值时转换为当前时间
 
 	UserInfo, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
 		panic("failed to connect database")
-	}
+	} //连接数据库
 	var videos []*JsonStruct.RspVideo
 	var video []JsonStruct.Video
 	last, _ = strconv.ParseInt(latest_time, 10, 64)
-	fmt.Println(time.UnixMilli(last))
-	UserInfo.Table("videos").Where("created_at < ?", time.UnixMilli(last)).Limit(30).Order("created_at desc").Find(&video)
+	UserInfo.Table("videos").Where("created_at < ?", time.UnixMilli(last)).Limit(30).Order("created_at desc").Find(&video) //获取最新投稿列表（<=30)
 	for _, v := range video {
 		User := ReadUser(v.UserID)
 		videos = append(videos, &JsonStruct.RspVideo{
@@ -224,7 +222,7 @@ func FeedAction(ctx context.Context, c *app.RequestContext) {
 			PlayURL:       v.PlayURL,
 			Title:         v.Title,
 		})
-	}
+	} //对应数据填入RspvideoModel
 
 	if len(video) == 0 {
 		msg := "Already the newest"
@@ -235,8 +233,8 @@ func FeedAction(ctx context.Context, c *app.RequestContext) {
 			VideoList:  nil,
 		})
 		return
-	}
-	nextTime := video[(len(video) - 1)].CreatedAt.Add(time.Duration(-1)).UnixMilli()
+	} //防止反复刷新导致数组越界
+	nextTime := video[(len(video) - 1)].CreatedAt.Add(time.Duration(-1)).UnixMilli() //获取最新投稿时间
 	msg := "Success"
 	c.JSON(consts.StatusOK, JsonStruct.FeedRsp{
 		NextTime:   &nextTime,
@@ -250,4 +248,4 @@ func ReadUser(userid int64) (u *JsonStruct.RspUser) {
 	UserInfo, _ := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	UserInfo.Table("users").Where("id = ?", userid).First(&User)
 	return &User
-}
+} //根据用户ID获取对应用户资料

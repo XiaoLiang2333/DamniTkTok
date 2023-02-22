@@ -53,3 +53,10 @@ type Comment struct {
 	UserID     int64  //用户id
 	VideoID    int64
 }
+type FavoriteList struct {
+	UserID    int64 `gorm:"primaryKey" json:"user_id"`
+	VideoID   int64 `gorm:"primaryKey" json:"video_id"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt gorm.DeletedAt `gorm:"index"`
+}

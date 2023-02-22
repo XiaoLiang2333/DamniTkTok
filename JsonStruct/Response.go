@@ -96,3 +96,13 @@ type CommentRes struct {
 	ID         int64   `json:"id"`          //评论id
 	User       RspUser `json:"user"`        // 评论用户信息
 }
+type FavoriteActionRsp struct {
+	StatusCode int    `json:"status_code"` // 状态码，0-成功，其他值-失败
+	StatusMsg  string `json:"status_msg"`  // 返回状态描述
+}
+
+type FavoriteListRsp struct {
+	StatusCode int         `json:"status_code"` // 状态码，0-成功，其他值-失败
+	StatusMsg  *string     `json:"status_msg"`  // 返回状态描述
+	VideoList  []*RspVideo `json:"video_list"`  // 用户点赞视频列表
+}
