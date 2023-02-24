@@ -180,7 +180,15 @@ func FeedAction(ctx context.Context, c *app.RequestContext) {
 	latest_time := c.Query("latest_time")
 
 	var last int64
-	last, _ = strconv.ParseInt(latest_time, 10, 64)
+	if latest_time == "0" {
+		now := time.Now().UnixMilli()
+		latest_time = strconv.FormatInt(now, 10)
+		last, _ = strconv.ParseInt(latest_time, 10, 64)
+	} else {
+		now := time.Now().UnixMilli()
+		latest_time = strconv.FormatInt(now, 10)
+		last, _ = strconv.ParseInt(latest_time, 10, 64)
+	}
 	//latest_time传入默认值时转换为当前时间
 	var count []JsonStruct.Video
 	Vcount := Database.DB.Table("videos").Find(&count)
