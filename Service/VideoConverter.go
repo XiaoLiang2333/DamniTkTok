@@ -20,7 +20,7 @@ func VideoConverter(filepath string) (out string) {
 	// 设置 ffmpeg 命令行参数
 	args := []string{"-i", inputFile, "-vf", "scale=1280:720", "-c:v", "libx264", "-preset", "medium", "-crf", "23", "-c:a", "copy", outpath}
 	// 创建 *exec.Cmd
-	cmd := exec.Command("ffmpeg", args...)
+	cmd := exec.Command("ffmpeg/bin/ffmpeg", args...)
 	// 运行 ffmpeg 命令
 	if err := cmd.Run(); err != nil {
 		fmt.Println(err)
