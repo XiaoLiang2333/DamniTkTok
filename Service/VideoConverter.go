@@ -18,13 +18,12 @@ func VideoConverter(filepath string) (out string) {
 	dir := path.Dir(outfile)
 	os.MkdirAll(dir, os.FileMode(0755))
 	// 设置 ffmpeg 命令行参数
-	args := []string{"-i", inputFile, "-vf", "scale=1280:720", "-c:v", "libx264", "-preset", "medium", "-crf", "23", "-c:a", "copy", outpath}
-	// 创建 *exec.Cmd
-	cmd := exec.Command("ffmpeg/bin/ffmpeg", args...)
-	// 运行 ffmpeg 命令
-	if err := cmd.Run(); err != nil {
-		fmt.Println(err)
-		return
+	cmd := exec.Command("ffmpeg", "-i", inputFile, "-profile:v", "main", "-movflags", "+faststart", "-crf", "26", "-y", outpath)
+
+	err := cmd.Run()
+	if err != nil {
+		fmt.Println("转码失败")
+		return ""
 	}
 	fmt.Println("转码成功")
 	return filename
