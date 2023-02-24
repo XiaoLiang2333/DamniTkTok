@@ -1,6 +1,7 @@
 package Service
 
 import (
+	"DamniTkTok/Database"
 	"DamniTkTok/JsonStruct"
 	"context"
 	"github.com/cloudwego/hertz/pkg/app"
@@ -28,16 +29,10 @@ func Register(ctx context.Context, c *app.RequestContext) {
 		})
 		return
 	}
-
-	UserInfo, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
-	if err != nil {
-		panic("failed to connect database")
-		return
-	}
 	resp := &JsonStruct.RegisterResponse{}
 	var userregister JsonStruct.User
-	UserInfo.Table("users").AutoMigrate(&JsonStruct.User{})
-	result := UserInfo.Table("users").Where("name = ?", username).First(&userregister)
+	Database.DB.Table("users").AutoMigrate(&userregister)
+	result := Database.DB.Table("users").Where("name = ?", username).First(&userregister)
 	if result.Error == nil {
 		c.JSON(consts.StatusUnauthorized, &JsonStruct.RegisterResponse{
 			StatusCode: 1,
@@ -47,7 +42,7 @@ func Register(ctx context.Context, c *app.RequestContext) {
 	}
 	token := ksuid.New().String()
 	userregister = JsonStruct.User{Name: username, UserPassWord: password, Token: token}
-	UserInfo.Table("users").Create(&userregister)
+	Database.DB.Table("users").Create(&userregister)
 	resp = &JsonStruct.RegisterResponse{
 		StatusCode: 0,
 		StatusMsg:  "Register Query Success",
@@ -65,10 +60,9 @@ func Login(ctx context.Context, c *app.RequestContext) {
 	var msg *string
 	if !usernameBool || !passwordBool {
 		failmsg := "no passed data"
-		msg = &failmsg
 		c.JSON(consts.StatusUnauthorized, &JsonStruct.LoginResponse{
 			StatusCode: 1,
-			StatusMsg:  msg,
+			StatusMsg:  &failmsg,
 		})
 		return
 	}

@@ -1,9 +1,9 @@
 package Service
 
 import (
+	"DamniTkTok/Database"
 	"DamniTkTok/JsonStruct"
 	"context"
-	"fmt"
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
 	"gorm.io/driver/mysql"
@@ -15,36 +15,24 @@ import (
 func FavorAction(ctx context.Context, c *app.RequestContext) {
 	// 获取客户端参数 token video_id action_type
 	actionType, _ := c.GetQuery("action_type")
-
 	token, _ := c.GetQuery("token")
 	videoId, _ := c.GetQuery("video_id")
 	int64VideoId, err := strconv.ParseInt(videoId, 10, 64)
 	if len(actionType) == 0 || len(token) == 0 || len(videoId) == 0 {
-		var msg *string
-		Failmsg := "no passed data"
-		msg = &Failmsg
 		c.JSON(500, &JsonStruct.FavoriteActionRsp{
 			StatusCode: 1,
-			StatusMsg:  *msg,
+			StatusMsg:  "no passed data",
 		})
 		return
 	}
 
 	// 验证 token
 	var userinfo JsonStruct.User
-	UserInfo, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
-	if err != nil {
-		panic("failed to connect database")
-		return
-	}
-	result := UserInfo.Table("users").Where("token = ?", token).First(&userinfo)
+	result := Database.DB.Table("users").Where("token = ?", token).First(&userinfo)
 	if result.Error != nil {
-		var msg *string
-		Failmsg := "Wrong token"
-		msg = &Failmsg
-		c.JSON(consts.StatusUnauthorized, &JsonStruct.PublishRsp{
+		c.JSON(consts.StatusUnauthorized, &JsonStruct.FavoriteActionRsp{
 			StatusCode: 1,
-			StatusMsg:  msg,
+			StatusMsg:  "Wrong token",
 		})
 		return
 	}
@@ -52,7 +40,7 @@ func FavorAction(ctx context.Context, c *app.RequestContext) {
 	// AutoMigrate 自动创建数据库表
 	resp := &JsonStruct.FavoriteActionRsp{}
 	var userfavorite JsonStruct.FavoriteList
-	err = UserInfo.AutoMigrate(&JsonStruct.FavoriteList{})
+	err = Database.DB.AutoMigrate(&JsonStruct.FavoriteList{})
 	if err != nil {
 		panic("failed to create table")
 		return
@@ -60,14 +48,11 @@ func FavorAction(ctx context.Context, c *app.RequestContext) {
 
 	// 通过 token 查询对应的用户ID —— result
 	var userregister JsonStruct.User
-	result = UserInfo.Where("token = ?", token).Find(&userregister)
+	result = Database.DB.Where("token = ?", token).First(&userregister)
 	if result.Error != nil {
-		var msg *string
-		Failmsg := "User Not Found"
-		msg = &Failmsg
 		c.JSON(consts.StatusUnauthorized, &JsonStruct.FavoriteActionRsp{
 			StatusCode: 1,
-			StatusMsg:  *msg,
+			StatusMsg:  "User Not Found",
 		})
 		return
 	}
@@ -76,22 +61,20 @@ func FavorAction(ctx context.Context, c *app.RequestContext) {
 	// 将点赞操作插入数据库 action_type 1-点赞
 	case strconv.Itoa(1):
 		userfavorite = JsonStruct.FavoriteList{UserID: userregister.ID, VideoID: int64VideoId}
-		result := UserInfo.Create(&userfavorite)
+		result := Database.DB.Create(&userfavorite)
 		// 对应视频点赞数 +1
 		var uservideo JsonStruct.Video
-		UserInfo.Where("id = ?", videoId).Find(&uservideo)
-		UserInfo.Table("videos").Where("id = ?", videoId).Update("favorite_count", uservideo.FavoriteCount+1)
-		// 处理插入异常
-		if result.Error != nil {
-			var msg *string
-			Failmsg := "Operation Failure"
-			msg = &Failmsg
-			c.JSON(consts.StatusUnauthorized, &JsonStruct.FavoriteActionRsp{
+		Database.DB.Where("id = ?", videoId).Find(&uservideo)
+		if result.Error == nil {
+			Database.DB.Table("videos").Where("id = ?", videoId).Update("favorite_count", uservideo.FavoriteCount+1)
+		} else {
+			c.JSON(500, &JsonStruct.FavoriteActionRsp{
 				StatusCode: 1,
-				StatusMsg:  *msg,
+				StatusMsg:  "Operation Failure",
 			})
 			return
 		}
+
 		// 正常执行
 		resp = &JsonStruct.FavoriteActionRsp{
 			StatusCode: 0,
@@ -101,25 +84,22 @@ func FavorAction(ctx context.Context, c *app.RequestContext) {
 
 	// 将取消点赞记录从数据库中删除 action_type 2-取消点赞
 	case strconv.Itoa(2):
-		result := UserInfo.Where(map[string]interface{}{"user_id": userregister.ID, "video_id": int64VideoId}).Find(&userfavorite)
+		result := Database.DB.Where(map[string]interface{}{"user_id": userregister.ID, "video_id": int64VideoId}).Find(&userfavorite)
 		// 对应视频点赞数 -1
 		var uservideo JsonStruct.Video
-		UserInfo.Where("id = ?", videoId).Find(&uservideo)
-		UserInfo.Table("videos").Where("id = ?", videoId).Update("favorite_count", uservideo.FavoriteCount-1)
+		Database.DB.Where("id = ?", videoId).Find(&uservideo)
+		Database.DB.Table("videos").Where("id = ?", videoId).Update("favorite_count", uservideo.FavoriteCount-1)
 		// 处理查询异常
 		if result.Error != nil {
-			var msg *string
-			Failmsg := "Query Error"
-			msg = &Failmsg
 			c.JSON(consts.StatusUnauthorized, &JsonStruct.FavoriteActionRsp{
 				StatusCode: 1,
-				StatusMsg:  *msg,
+				StatusMsg:  "Query Error",
 			})
 			return
 		}
 
 		// 正常执行
-		UserInfo.Unscoped().Delete(&userfavorite)
+		Database.DB.Unscoped().Delete(&userfavorite)
 
 		resp = &JsonStruct.FavoriteActionRsp{
 			StatusCode: 0,
@@ -130,11 +110,12 @@ func FavorAction(ctx context.Context, c *app.RequestContext) {
 
 }
 
-// UserFavorList List 喜欢列表接口实现
+// UserFavorList 喜欢列表接口实现
 func UserFavorList(ctx context.Context, c *app.RequestContext) {
 	// 获取客户端参数 user_id token
 	user_id, user_idBool := c.GetQuery("user_id")
-	token, tokenBool := c.GetQuery("token")
+	_, tokenBool := c.GetQuery("token")
+	userid, _ := strconv.ParseInt(user_id, 10, 64)
 	// 检查客户端参数 user_id token
 	if !user_idBool || !tokenBool {
 		Failmsg := "no passed data"
@@ -145,28 +126,10 @@ func UserFavorList(ctx context.Context, c *app.RequestContext) {
 		})
 		return
 	}
-	fmt.Println(user_id)
-	// 验证 token
-	var userinfo JsonStruct.User
-	TikTok, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
-	if err != nil {
-		panic("failed to connect database")
-		return
-	}
-	result := TikTok.Table("users").Where("token = ?", token).First(&userinfo)
-	if result.Error != nil {
-		Failmsg := "Wrong token"
-		c.JSON(500, &JsonStruct.FavoriteListRsp{
-			StatusCode: 1,
-			StatusMsg:  &Failmsg,
-			VideoList:  nil,
-		})
-		return
-	}
 
 	/* 获取用户的所有喜欢列表（点赞视频）*/
 	var userfavorite []JsonStruct.FavoriteList
-	result = TikTok.Table("favorite_lists").Where("user_id = ?", user_id).Find(&userfavorite)
+	result := Database.DB.Table("favorite_lists").Where("user_id = ?", userid).Find(&userfavorite)
 	// 处理查询异常
 	if result.Error != nil {
 		msg := "Query Error"
@@ -179,7 +142,7 @@ func UserFavorList(ctx context.Context, c *app.RequestContext) {
 	}
 
 	var videos []*JsonStruct.RspVideo
-	TikTok.Table("favorite_lists").Where("user_id = ?", user_id).Find(&userfavorite)
+	Database.DB.Table("favorite_lists").Where("user_id = ?", user_id).Find(&userfavorite)
 	for _, v := range userfavorite {
 		video := GetFavoriteVideo(v.VideoID)
 		User := ReadUser(v.UserID)

@@ -1,6 +1,7 @@
 package Service
 
 import (
+	"DamniTkTok/Database"
 	"DamniTkTok/JsonStruct"
 	"context"
 	"github.com/cloudwego/hertz/pkg/app"
@@ -27,13 +28,8 @@ func CommentAction(ctx context.Context, c *app.RequestContext) {
 		})
 		return
 	}
-
-	UserInfo, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
-	if err != nil {
-		panic("failed to connect database")
-	}
 	var userinfo JsonStruct.User
-	result := UserInfo.Table("users").Where("token = ?", token).First(&userinfo)
+	result := Database.DB.Table("users").Where("token = ?", token).First(&userinfo)
 	if result.Error != nil {
 		var ms2 *string
 		Failmsg := "Wrong token"
@@ -46,7 +42,7 @@ func CommentAction(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	err = UserInfo.AutoMigrate(&JsonStruct.Comment{}, &JsonStruct.User{})
+	err := Database.DB.AutoMigrate(&JsonStruct.Comment{}, &JsonStruct.User{})
 	if err != nil {
 		var ms3 *string
 		Failmsg := "Failed to create a table"
@@ -84,7 +80,7 @@ func CommentAction(ctx context.Context, c *app.RequestContext) {
 			VideoID:    int64(m),
 		}
 
-		result := UserInfo.Table("comments").Create(&Comment)
+		result := Database.DB.Table("comments").Create(&Comment)
 		if result.Error != nil {
 			var ms5 *string
 			Failmsg := "add err"
@@ -98,7 +94,7 @@ func CommentAction(ctx context.Context, c *app.RequestContext) {
 		}
 
 		var com JsonStruct.Video
-		result = UserInfo.Table("videos").Where("id = ?", video_id).First(&com)
+		result = Database.DB.Table("videos").Where("id = ?", video_id).First(&com)
 		if result.Error != nil {
 			var ms5 *string
 			Failmsg := "video_id err"
@@ -113,7 +109,7 @@ func CommentAction(ctx context.Context, c *app.RequestContext) {
 		Video := JsonStruct.Video{
 			CommentCount: com.CommentCount,
 		}
-		result4 := UserInfo.Table("videos").Where("id = ?", video_id).Update("favorite_count", Video.CommentCount+1)
+		result4 := Database.DB.Table("videos").Where("id = ?", video_id).Update("favorite_count", Video.CommentCount+1)
 		if result4.Error != nil {
 			var ms6 *string
 			Failmsg := "Failed to Update"
@@ -169,7 +165,7 @@ func CommentAction(ctx context.Context, c *app.RequestContext) {
 			})
 			return
 		}
-		UserInfo.Delete(&JsonStruct.Comment{}, comment_id)
+		Database.DB.Delete(&JsonStruct.Comment{}, comment_id)
 		var ms9 *string
 		Failmsg := "Success"
 		ms9 = &Failmsg
