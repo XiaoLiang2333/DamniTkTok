@@ -18,7 +18,7 @@ func VideoConverter(filepath string) (out string) {
 	dir := path.Dir(outfile)
 	os.MkdirAll(dir, os.FileMode(0755))
 	// 设置 ffmpeg 命令行参数
-	cmd := exec.Command("ffmpeg", "-i", inputFile, "-profile:v", "main", "-movflags", "+faststart", "-crf", "26", "-y", outpath)
+	cmd := exec.Command("ffmpeg/bin/ffmpeg", "-i", inputFile, "-profile:v", "main", "-movflags", "+faststart", "-crf", "26", "-y", outpath)
 
 	err := cmd.Run()
 	if err != nil {

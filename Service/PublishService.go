@@ -180,64 +180,73 @@ func FeedAction(ctx context.Context, c *app.RequestContext) {
 	latest_time := c.Query("latest_time")
 
 	var last int64
+	now := time.Now().UnixMilli()
 	if latest_time == "0" {
-		now := time.Now().UnixMilli()
+
 		latest_time = strconv.FormatInt(now, 10)
 		last, _ = strconv.ParseInt(latest_time, 10, 64)
 	} else {
-		now := time.Now().UnixMilli()
-		latest_time = strconv.FormatInt(now, 10)
 		last, _ = strconv.ParseInt(latest_time, 10, 64)
 	}
+	d5415 := time.UnixMilli(last)
+	fmt.Println(d5415)
 	//latest_time传入默认值时转换为当前时间
-	var count []JsonStruct.Video
-	Vcount := Database.DB.Table("videos").Find(&count)
-	var videos []*JsonStruct.RspVideo
-	video := make([]JsonStruct.Video, Vcount.RowsAffected)
+	var Limitvideo []JsonStruct.Video
+	result := Database.DB.Table("videos").Where("created_at >= ?", time.UnixMilli(last)).Order("created_at desc").Find(&Limitvideo)
+	if result.RowsAffected > 1 || last == now {
+		var count []JsonStruct.Video
+		Vcount := Database.DB.Table("videos").Find(&count)
+		var videos []*JsonStruct.RspVideo
+		video := make([]JsonStruct.Video, Vcount.RowsAffected)
+		now := time.Now().UnixMilli()
+		last, _ = strconv.ParseInt(strconv.FormatInt(now, 10), 10, 64)
+		Database.DB.Table("videos").Where("created_at < ?", time.UnixMilli(last)).Limit(30).Order("created_at desc").Find(&video)
+		//获取最新投稿列表（<=30)
+		for _, v := range video {
+			User := ReadUser(v.UserID)
+			videos = append(videos, &JsonStruct.RspVideo{
+				Author:        User,
+				CommentCount:  v.CommentCount,
+				CoverURL:      v.CoverURL,
+				FavoriteCount: v.FavoriteCount,
+				ID:            v.ID,
+				IsFavorite:    v.IsFavorite,
+				PlayURL:       v.PlayURL,
+				Title:         v.Title,
+			})
+		} //对应数据填入RspvideoModel
+		var nextTime int64
+		if len(video) == 0 {
 
-	limit, _ := strconv.Atoi(strconv.FormatInt(Vcount.RowsAffected, 10))
-	Database.DB.Table("videos").Where("created_at < ?", time.UnixMilli(last)).Limit(limit).Order("created_at desc").Find(&video)
-	//获取最新投稿列表（<=30)
-	a := time.UnixMilli(last)
-	fmt.Println(a)
-	for _, v := range video {
-		User := ReadUser(v.UserID)
-		videos = append(videos, &JsonStruct.RspVideo{
-			Author:        User,
-			CommentCount:  v.CommentCount,
-			CoverURL:      v.CoverURL,
-			FavoriteCount: v.FavoriteCount,
-			ID:            v.ID,
-			IsFavorite:    v.IsFavorite,
-			PlayURL:       v.PlayURL,
-			Title:         v.Title,
-		})
-	} //对应数据填入RspvideoModel
-	var nextTime int64
-
-	if len(video) == 0 {
-
-		msg := "Already the newest"
+			msg := "Already the newest"
+			c.JSON(consts.StatusOK, JsonStruct.FeedRsp{
+				NextTime:   nil,
+				StatusCode: 1,
+				StatusMsg:  &msg,
+				VideoList:  nil,
+			})
+			return
+		} //防止反复刷新导致数组越界
+		nextTime = video[0].CreatedAt.UnixNano() / int64(time.Millisecond)
+		msg := "Success"
 		c.JSON(consts.StatusOK, JsonStruct.FeedRsp{
+
+			NextTime:   &nextTime,
+			StatusCode: 0,
+			StatusMsg:  &msg,
+			VideoList:  videos,
+		})
+	} else {
+		msg := "fail"
+		c.JSON(500, JsonStruct.FeedRsp{
 			NextTime:   nil,
 			StatusCode: 1,
 			StatusMsg:  &msg,
 			VideoList:  nil,
 		})
-		return
-	} //防止反复刷新导致数组越界
-	//获取最新投稿时间
-	nextTime = video[len(video)-1].CreatedAt.UnixNano() / int64(time.Millisecond)
-	b := time.UnixMilli(nextTime)
-	fmt.Println(b)
-	msg := "Success"
-	c.JSON(consts.StatusOK, JsonStruct.FeedRsp{
-		NextTime:   &nextTime,
-		StatusCode: 0,
-		StatusMsg:  &msg,
-		VideoList:  videos,
-	})
+	}
 }
+
 func ReadUser(userid int64) (u *JsonStruct.RspUser) {
 	var User JsonStruct.RspUser
 	result := Database.DB.Table("users").Where("id = ?", userid).First(&User)
